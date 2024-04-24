@@ -17,7 +17,7 @@ import sys
 import os
 from dotenv import load_dotenv
 
-load_dotenv('hatest_reader_master.env')
+load_dotenv('pgadmin_reader_primary.env')
 
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = int(os.getenv('DB_PORT', '5432'))
@@ -63,19 +63,22 @@ if __name__ == "__main__":
             else:
                raise Exception("Connection not ready")
             
-            # Check if connected to Master or a Replica.
+            # Check if connected to Primary or a Replica.
             cur.execute("select pg_is_in_recovery(),inet_server_addr()")
             rows = cur.fetchone()
             if (rows[0] == False):
-               print("[reader master] Working with MASTER - %s" % rows[1], end=""),
+               print("[reader primary] Working with PRIMARY - %s" % rows[1], end=""),
+               cur.execute("SELECT MAX(TM) FROM HATEST")
+               row = str(cur.fetchone()[0])
+               print(' | Read: %s\n' % row, end="")
             else:
-               print("[reader master] Working with REPLICA - %s" % rows[1], end=""),
-            
-            cur.execute("SELECT MAX(TM) FROM HATEST")
-            row = str(cur.fetchone()[0])
-            print(' | Retrieved: %s\n' % row, end="")
+               print("[reader primary] Working with REPLICA - %s" % rows[1], end=""),
+               cur.execute("SELECT MAX(TM) FROM HATEST")
+               row = str(cur.fetchone()[0])
+               print(' | Read: %s\n' % row, end="")
 
-         except:
+         except Exception as err:
+            print(" Could not read data due to '%s'." % err.__str__().split('\n')[0])
             if conn is not None:
                print(" Disconnecting ...", end="")
                conn.close()

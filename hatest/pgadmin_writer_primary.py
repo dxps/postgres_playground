@@ -17,7 +17,7 @@ import sys
 import os
 from dotenv import load_dotenv
 
-load_dotenv('pgadmin_reader_master.env')
+load_dotenv('pgadmin_writer_primary.env')
 
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = int(os.getenv('DB_PORT', '5432'))
@@ -63,21 +63,25 @@ if __name__ == "__main__":
             else:
                raise Exception("Connection not ready")
             
-            # Check if connected to Master or a Replica.
+            # Check if connected to Primary or Replica.
             cur.execute("select pg_is_in_recovery(),inet_server_addr()")
             rows = cur.fetchone()
             if (rows[0] == False):
-               print("[reader master] Working with MASTER - %s" % rows[1], end=""),
-               cur.execute("SELECT MAX(TM) FROM HATEST")
-               row = str(cur.fetchone()[0])
-               print(' | Retrieved: %s\n' % row, end="")
+               print ("[writer primary] Working with PRIMARY - %s" % rows[1], end=""),
+               cur.execute("INSERT INTO HATEST VALUES(CURRENT_TIMESTAMP) RETURNING TM")
+               if cur.rowcount == 1 :
+                  conn.commit()
+                  tmrow = str(cur.fetchone()[0])
+                  print ('| Inserted: %s\n' % tmrow, end="")
             else:
-               print("[reader master] Working with REPLICA - %s" % rows[1], end=""),
+               print ("[writer primary] Working with REPLICA - %s" % rows[1], end=""),
                cur.execute("SELECT MAX(TM) FROM HATEST")
-               row = str(cur.fetchone()[0])
-               print(' | Retrieved: %s\n' % row, end="")
+               row = cur.fetchone()
+               print ("| Read: %s\n" % str(row[0]), end="")
 
-         except:
+         except Exception as err:
+            print(" Could not write data due to '%s'." % err.__str__().split('\n')[0])
+            time.sleep(2)
             if conn is not None:
                print(" Disconnecting ...", end="")
                conn.close()

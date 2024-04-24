@@ -63,21 +63,23 @@ if __name__ == "__main__":
             else:
                raise Exception("Connection not ready")
             
-            # Check if connected to Master or a Replica.
+            # Check if connected to Primary or a Replica.
             cur.execute("select pg_is_in_recovery(),inet_server_addr()")
             rows = cur.fetchone()
             if (rows[0] == False):
-               print("[reader replica] Working with MASTER - %s" % rows[1], end=""),
+               print("[reader replica] Working with PRIMARY - %s" % rows[1], end=""),
                cur.execute("SELECT MAX(TM) FROM HATEST")
                row = str(cur.fetchone()[0])
-               print(' | Retrieved: %s\n' % row, end="")
+               print(' | Read: %s\n' % row, end="")
             else:
                print("[reader replica] Working with REPLICA - %s" % rows[1], end=""),
                cur.execute("SELECT MAX(TM) FROM HATEST")
                row = str(cur.fetchone()[0])
-               print(' | Retrieved: %s\n' % row, end="")
+               print(' | Read: %s\n' % row, end="")
 
-         except:
+         except Exception as err:
+            print(" Could not read data due to '%s'." % err.__str__().split('\n')[0])
+            time.sleep(2)
             if conn is not None:
                print(" Disconnecting ...", end="")
                conn.close()
