@@ -46,9 +46,9 @@ On any two hosts (regardless of their role, as either _Leader_ or _Replica_), ru
 + Cluster: cluster_1 (7368382315229381771) -+-----------+----+-----------+-----------------+------------------------+-------------------+------+
 | Member            | Host        | Role    | State     | TL | Lag in MB | Pending restart | Pending restart reason | Scheduled restart | Tags |
 +-------------------+-------------+---------+-----------+----+-----------+-----------------+------------------------+-------------------+------+
-| my-pgdb-ha-host-1 | 10.63.85.25 | Leader  | running   |  4 |           |                 |                        |                   |      |
-| my-pgdb-ha-host-2 | 10.63.85.26 | Replica | streaming |  4 |         0 |                 |                        |                   |      |
-| my-pgdb-ha-host-3 | 10.63.85.27 | Replica | streaming |  4 |         0 |                 |                        |                   |      |
+| my-pgdb-ha-host-1 | 10.11.12.13 | Leader  | running   |  4 |           |                 |                        |                   |      |
+| my-pgdb-ha-host-2 | 10.11.12.14 | Replica | streaming |  4 |         0 |                 |                        |                   |      |
+| my-pgdb-ha-host-3 | 10.11.12.15 | Replica | streaming |  4 |         0 |                 |                        |                   |      |
 +-------------------+-------------+---------+-----------+----+-----------+-----------------+------------------------+-------------------+------+
 
 ```

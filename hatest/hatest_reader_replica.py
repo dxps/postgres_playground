@@ -73,7 +73,7 @@ if __name__ == "__main__":
             
             cur.execute("SELECT MAX(TM) FROM HATEST")
             row = str(cur.fetchone()[0])
-            print(' | Retrieved: %s\n' % row, end="")
+            print('\t Retrieved: %s\n' % row, end="")
 
          except Exception as err:
             print(" Could not read data due to '%s'." % err.__str__().split('\n')[0])

@@ -72,7 +72,7 @@ if __name__ == "__main__":
                if cur.rowcount == 1 :
                   conn.commit()
                   tmrow = str(cur.fetchone()[0])
-                  print ('| Inserted: %s\n' % tmrow, end="")
+                  print ('\t Inserted: %s\n' % tmrow, end="")
             else:
                print ("[writer primary] Working with REPLICA - %s" % rows[1], end=""),
                cur.execute("SELECT MAX(TM) FROM HATEST")
