@@ -17,7 +17,7 @@ import sys
 import os
 from dotenv import load_dotenv
 
-load_dotenv('hatest_reader_primary.env')
+load_dotenv('hatest_reader_leader.env')
 
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = int(os.getenv('DB_PORT', '5432'))

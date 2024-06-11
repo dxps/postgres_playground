@@ -15,14 +15,14 @@ Also `patronictl` tool must be available if you want to watch the cluster state,
 
 ### Setup
 
-Run the following entries on primary / leader host by connecting to postgres database using a user with enough privileges:
+Run the following entries on leader host by connecting to postgres database using a user with enough privileges:
 
 ```sql
 CREATE USER hatest WITH ENCRYPTED PASSWORD 'hatest';
 CREATE DATABASE hatest OWNER hatest;
 ```
 
-Next, to test the result, plus continue with the rest of the needed objects, connect to the same primary / leader host using `hatest` user
+Next, to test the result, plus continue with the rest of the needed objects, connect to the same leader host using `hatest` user
 and run:
 
 ```sql
@@ -31,7 +31,7 @@ CREATE UNIQUE INDEX idx_hatest ON hatest (tm desc);
 ```
 
 Now you should be able to connect to `hatest` database on any of the replica hosts using `hatest` user
-and see all the objects that were previously created on the primary / leader host
+and see all the objects that were previously created on the leader host
 (that is the `hatest` table on `public` schema and the `idx_hatest` index on that table).
 
 <br/>
@@ -61,6 +61,6 @@ On any two hosts (regardless of their role, as either _Leader_ or _Replica_), ru
 
 #### Write data on the leader host
 
--   Create the `hatest_writer_primary.env` file with your connection details,\
-    based on the provided `hatest_writer_primary.env.sample` file.
--   Start the writer using `./hatest_writer_primary.py`
+-   Create the `hatest_writer_leader.env` file with your connection details,\
+    based on the provided `hatest_writer_leader.env.sample` file.
+-   Start the writer using `./hatest_writer_leader.py`
