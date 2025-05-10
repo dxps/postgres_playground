@@ -31,3 +31,12 @@ The `openssh-server` image is taken from [here](https://hub.docker.com/r/linuxse
 ### Connect to nodes
 
 `ssh postgres@localhost -p 2221`
+
+<br/>
+
+### Init the secondary server
+
+On `pg2` host, do:
+
+1. Remove the existing data directory (`rm -rf /var/lib/postgresql/16/main/`)
+2. Run `pg_basebackup -h pg1 -w -U postgres -F plain -X stream -R -S dxps_slot -C -D /var/lib/postgresql/16/main/` to copy the data from `pg1` to `pg2`.
