@@ -51,7 +51,12 @@ A shorter way is to use `ssh-copy-id` command such as `ssh-copy-id pg2` (which c
 On `pg2` host, do:
 
 1. Remove the existing data directory (`rm -rf /var/lib/postgresql/16/main/`)
-2. Run `pg_basebackup -h pg1 -w -U postgres -F plain -X stream -R -S dxps_slot -C -D /var/lib/postgresql/16/main/` to copy the data from `pg1` to `pg2`.
+2. Run `pg_basebackup -h pg1 -w -U postgres -F plain -X stream -R -S dxps_slot -C -D /var/lib/postgresql/16/main/` to copy the data from `pg1` to `pg2`.\
+   where:
+    - `-S` specifies the slot name
+    - `-C` specifies to create the slot
+
+Additionally, test the replication (from `pg1` to `pg2`) by creating a database in `pg1` instance and verify that this gets also created in `pg2` instance.
 
 <br/>
 
