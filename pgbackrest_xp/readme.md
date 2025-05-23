@@ -1,8 +1,17 @@
+# PostgreSQL with pgBackRest experiment
+
+TODO
+
 The `openssh-server` image is taken from [here](https://hub.docker.com/r/linuxserver/openssh-server).
 
 <br/>
 
 ### Install prerequisites
+
+Start the three containers (named `pg1`, `pg2` and `pgbr`) using their respective scripts.
+
+TODO: 3 or 5 containers?
+Add `pg1.sh` like scripts that uses `docker exec -it {container-name} /bin/bash`.
 
 Enter to the hosts containers using `docker exec -it {container-name} /bin/bash`.\
 For example, to enter to `pg1` container use `docker exec -it pg1 /bin/bash`.
@@ -55,6 +64,10 @@ On `pg2` host, do:
    where:
     - `-S` specifies the slot name
     - `-C` specifies to create the slot
+    - `-X` specifies the wall method (shortcut for `--wal-method`).
+        - Tells to include the required WAL files in the backtup.
+        - `stream` tells to stream WAL data while the backup is being taken.
+          It will open an second connection to the server.
 
 Additionally, test the replication (from `pg1` to `pg2`) by creating a database in `pg1` instance and verify that this gets also created in `pg2` instance.
 
