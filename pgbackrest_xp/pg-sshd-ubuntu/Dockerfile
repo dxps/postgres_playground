@@ -8,7 +8,7 @@ ENV SSHD_CONFIG_ADDITIONAL=""
 
 # Install OpenSSH server, clean up, create directories, set permissions, and configure SSH
 RUN apt-get update \
-    && apt-get install -y iproute2 iputils-ping openssh-server telnet \
+    && apt-get install -y iproute2 iputils-ping openssh-server postgresql-16 vim sudo telnet \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && mkdir -p /run/sshd \

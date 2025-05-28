@@ -6,18 +6,22 @@ The `openssh-server` image is taken from [here](https://hub.docker.com/r/linuxse
 
 <br/>
 
-### Install prerequisites
+## Setup
 
-Start the three containers (named `pg1`, `pg2` and `pgbr`) using their respective scripts.
+First, build a local docker image that the containers will use:
 
-TODO: 3 or 5 containers?
+```shell
+cd pg-sshd-ubuntu/
+docker build -t pg-sshd-ubuntu:latest .
+```
+
+Start the three containers (named `pg1`, `pg2` and `pg3`) using their respective `./run_pgX.sh` scripts.
+
 Add `pg1.sh` like scripts that uses `docker exec -it {container-name} /bin/bash`.
 
-Enter to the hosts containers using `docker exec -it {container-name} /bin/bash`.\
-For example, to enter to `pg1` container use `docker exec -it pg1 /bin/bash`.
+Enter to the containers using their respective `./pgX.sh` scripts to install some prerequisites:
 
-1. Besides some needed classic utilities such as `sudo` and `vim` (installed using `apt update` (really needed, first time) and then `apt install vim sudo`), install PostgreSQL server and client using `apt install postgresql-16`.
-2. Add `postgres` user to sudoers (it's just a helpful thing).\
+1. Add `postgres` user to sudoers (very handy sometimes).\
    Example (from `pg1` host):
     ```shell
     root@pg1:/# grep sudo /etc/group
