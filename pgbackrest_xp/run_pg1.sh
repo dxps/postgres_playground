@@ -8,6 +8,6 @@ docker run -d              \
   --add-host=pg3:10.0.0.13 \
   -p 2221:22               \
   -e SSH_USERNAME=postgres \
-  -e SSH_PASSWORD=pgpass   \
-  my-ubuntu-sshd:latest
+  -e SSH_PASSWORD='pgpass' \
+  pg-sshd-ubuntu:latest
 

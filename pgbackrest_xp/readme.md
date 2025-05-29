@@ -1,14 +1,13 @@
 # PostgreSQL with pgBackRest experiment
 
-TODO
-
-The `openssh-server` image is taken from [here](https://hub.docker.com/r/linuxserver/openssh-server).
+This is an experiment to set up a PostgreSQL HA cluster with pgBackRest.
 
 <br/>
 
 ## Setup
 
-First, build a local docker image that the containers will use:
+First, build a local Docker image of `pg-sshd-ubuntu` that is included in this repo.
+This image is used by all the PostgreSQL related containers. Build the image as follows:
 
 ```shell
 cd pg-sshd-ubuntu/
@@ -35,27 +34,16 @@ Enter to the containers using their respective `./pgX.sh` scripts to install som
 
 #### Generate SSH keys
 
--   Enter into the container\
-    (using `ssh postgres@localhost -p 2221` or `docker exec -it pg1 /bin/bash`)
--   Switch to `postgres` user\
-    (using `su - postgres`)
--   Generate the keypair\
-    (using `ssh-keygen -t rsa`)
-
-#### Update `/etc/hosts` file
-
-Just for convenience (it's easy to specify the (host)name instead of IP address), update `/etc/hosts` file on each host with the following lines:
-
-```
-172.17.0.2	pg1
-172.17.0.3	pg2
-172.17.0.4	pgbr
-```
+-   Enter into the container (using `./pg1.sh`, for example).
+-   Switch to `postgres` user (using `su - postgres`).
+-   Generate the keypair (using `ssh-keygen -t rsa`).
 
 #### Copy the public keys to each others hosts
 
-Copy the public key (from `~/.ssh/id_rsa.pub`) of `postgres` user from one host to the other (into `~/.ssh/authorized_keys` file of `postgres` user on that host).\
-A shorter way is to use `ssh-copy-id` command such as `ssh-copy-id pg2` (which copies the public key of `postgres` user from `pg1` to `pg2`).
+Copy the public key (from `~/.ssh/id_rsa.pub`) of `postgres` user from one host to the other\
+(into `~/.ssh/authorized_keys` file of `postgres` user on that host).\
+A shorter way is to use `ssh-copy-id` command (such as `ssh-copy-id pg2`)\
+which copies the public key of `postgres` user from `pg1` to `pg2`.
 
 <br/>
 
