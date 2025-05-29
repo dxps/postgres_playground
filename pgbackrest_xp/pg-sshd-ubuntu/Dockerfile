@@ -3,12 +3,12 @@ FROM ubuntu:24.04
 
 # Set environment variables to avoid interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
-ENV SSH_USERNAME="ubuntu"
+ENV SSH_USERNAME="postgres"
 ENV SSHD_CONFIG_ADDITIONAL=""
 
 # Install OpenSSH server, clean up, create directories, set permissions, and configure SSH
 RUN apt-get update \
-    && apt-get install -y iproute2 iputils-ping openssh-server postgresql-16 vim sudo telnet \
+    && apt-get install -y iproute2 iputils-ping openssh-server postgresql-16 vim sudo telnet net-tools python3-pip python3-dev libpq-dev python3-venv \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && mkdir -p /run/sshd \

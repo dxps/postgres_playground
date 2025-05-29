@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Set default values for SSH_USERNAME and SSH_PASSWORD if not provided
-: ${SSH_USERNAME:=ubuntu}
+# Check for SSH_USERNAME and SSH_PASSWORD being set, error out if not.
+: ${SSH_USERNAME:?"Error: SSH_USERNAME environment variable is not set."}
 : ${SSH_PASSWORD:?"Error: SSH_PASSWORD environment variable is not set."}
 : ${SSHD_CONFIG_ADDITIONAL:=""}
 
 # Create the user with the provided username and set the password
 if id "$SSH_USERNAME" &>/dev/null; then
-    echo "User $SSH_USERNAME already exists"
+    echo "User $SSH_USERNAME already exists!"
 else
     useradd -ms /bin/bash "$SSH_USERNAME"
     echo "$SSH_USERNAME:$SSH_PASSWORD" | chpasswd
