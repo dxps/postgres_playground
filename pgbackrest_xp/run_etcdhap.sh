@@ -1,7 +1,7 @@
 
 docker run -d              \
-  --name etcdha            \
-  --hostname etcdha        \
+  --name etcdhap           \
+  --hostname etcdhap       \
   --ip 10.0.0.14           \
   --network=pgbrxp         \
   --add-host=pg1:10.0.0.11 \
