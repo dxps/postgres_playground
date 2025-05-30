@@ -1,6 +1,9 @@
-# PostgreSQL with pgBackRest experiment
+# PostgreSQL with Patroni, HAProxy, and pgBackRest experiment
 
-This is an experiment to set up a PostgreSQL HA cluster with pgBackRest.
+This is an experiment of having:
+
+1. A PostgreSQL HA setup using Patroni and HAProxy.
+2. A backup and restore solutin using pgBackRest.
 
 <br/>
 
