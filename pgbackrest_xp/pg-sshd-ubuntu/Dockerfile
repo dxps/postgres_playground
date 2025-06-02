@@ -4,6 +4,7 @@ FROM ubuntu:24.04
 # Set environment variables to avoid interactive prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SSH_USERNAME="postgres"
+ENV SSH_USERPASS="123"
 ENV SSHD_CONFIG_ADDITIONAL=""
 
 RUN apt-get update \

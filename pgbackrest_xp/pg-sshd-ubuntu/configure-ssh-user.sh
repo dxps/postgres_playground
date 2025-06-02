@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Check for SSH_USERNAME and SSH_PASSWORD being set, error out if not.
+# Check for SSH_USERNAME and SSH_USERPASS being set, error out if not.
 : ${SSH_USERNAME:?"Error: SSH_USERNAME environment variable is not set."}
-: ${SSH_PASSWORD:?"Error: SSH_PASSWORD environment variable is not set."}
+: ${SSH_USERPASS:?"Error: SSH_USERPASS environment variable is not set."}
 : ${SSHD_CONFIG_ADDITIONAL:=""}
 
 SSH_USERHOME=${SSH_USERHOME}
@@ -11,13 +11,19 @@ if [ "$SSH_USERNAME" == "postgres" ]; then
     SSH_USERHOME=/var/lib/postgresql
 fi
 
-# Create the user with the provided username and set the password
+# Create the user with the provided username and set the password.
 if id "$SSH_USERNAME" &>/dev/null; then
     echo "User $SSH_USERNAME already exists!"
 else
     useradd -ms /bin/bash "$SSH_USERNAME"
-    echo "$SSH_USERNAME:$SSH_PASSWORD" | chpasswd
-    echo "User $SSH_USERNAME created with the provided password"
+    echo "$SSH_USERNAME:$SSH_USERPASS" | chpasswd
+    echo "Created user $SSH_USERNAME with the provided password."
+fi
+
+# If the user is postgres, let's grant it to do `sudo`.
+if [ "$SSH_USERNAME" == "postgres" ]; then
+   usermod -aG sudo postgres
+   echo "Granted $SSH_USERNAME user to run `sudo`."
 fi
 
 # Set the authorized keys from the AUTHORIZED_KEYS environment variable (if provided)
