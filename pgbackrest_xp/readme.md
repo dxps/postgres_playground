@@ -46,11 +46,12 @@ cd patroni-packages
 mkdir data && chmod 700 data && cd data
 ```
 
-In this `data` directory we'll put the Patroni configuration file. So, we'll do it for all three `pgX` hosts in the next steps.
+In that `data` directory we'll put the Patroni configuration file named `patroni.yml`.\
+So, in the next section we'll do it on all three `pgX` hosts.
 
 ### Patroni configuration
 
-In `pg1` host, put the following into the `patroni.yaml` file:
+In `pg1` host, put the following into the `patroni.yml` file:
 
 ```yaml
 scope: postgres
@@ -107,7 +108,7 @@ tags:
     nosync: false
 ```
 
-In `pg2` host, put the following into the `patroni.yaml` file:
+In `pg2` host, put the following into the `patroni.yml` file:
 
 ```yaml
 scope: postgres
@@ -164,7 +165,7 @@ tags:
     nosync: false
 ```
 
-In `pg3` host, put the following into the `patroni.yaml` file:
+In `pg3` host, put the following into the `patroni.yml` file:
 
 ```yaml
 scope: postgres
@@ -239,7 +240,10 @@ esac
 exit 0
 ```
 
-and make it executable using `chmod +x /etc/init.d/patroni`.
+that means (as `postgres` user):
+
+-   creating the file using `sudo vi /etc/init.d/partroni`
+-   and make it executable using `chmod +x /etc/init.d/patroni`.
 
 TODO: A complete SysV init script would be [this one](https://github.com/patroni/patroni/blob/master/extras/startup-scripts/patroni).
 
@@ -250,17 +254,30 @@ TODO: A complete SysV init script would be [this one](https://github.com/patroni
 ## etcd Setup
 
 Start the etcd & HAProxy related container using the `./run_etcdhap.sh` script.
-Enter the container using `./etcdhap.sh` script.
+Enter into the container using `./etcdhap.sh` script.
 
-Download [etcd v3.4.32](https://github.com/etcd-io/etcd/releases/download/v3.4.32/etcd-v3.4.32-linux-amd64.tar.gz) and have it extracted into `/apps/etcd` directory.
+Download [etcd v3.4.32](https://github.com/etcd-io/etcd/releases/download/v3.4.32/etcd-v3.4.32-linux-amd64.tar.gz) and have it extracted into `/apps/etcd` directory:
 
-Start etcd using the following `./etcd --listen-peer-urls="http://10.0.0.14:2380" --listen-client-urls="http://localhost:2379,http://10.0.0.14:2379" --initial-advertise-peer-urls="http://10.0.0.14:2380" --initial-cluster="default=http://10.0.0.14:2380" --advertise-client-urls="http://10.0.0.14:2379" --initial-cluster-token="etcd-cluster" --initial-cluster-state="new" --enable-v2=true`
+```shell
+mkdir /apps
+wget https://github.com/etcd-io/etcd/releases/download/v3.4.32/etcd-v3.4.32-linux-amd64.tar.gz
+tar zxvf etcd-v3.4.32-linux-amd64.tar.gz -C /apps
+rm etcd-v3.4.32-linux-amd64.tar.gz
+mv /apps/etcd-v3.4.32-linux-amd64 /apps/etcd
+```
+
+Start etcd using:
+
+```shell
+cd /apps/etcd
+./etcd --listen-peer-urls="http://10.0.0.14:2380" --listen-client-urls="http://localhost:2379,http://10.0.0.14:2379" --initial-advertise-peer-urls="http://10.0.0.14:2380" --initial-cluster="default=http://10.0.0.14:2380" --advertise-client-urls="http://10.0.0.14:2379" --initial-cluster-token="etcd-cluster" --initial-cluster-state="new" --enable-v2=true
+```
 
 <br/>
 
 ## Start the PostgreSQL HA cluster using Patroni
 
-With `etcd` up and running, start Patroni on all three `pgX` hosts using the `/etc/init.d/patroni start`.
+With `etcd` up and running, start Patroni on all three `pgX` hosts using the `sudo /etc/init.d/patroni start`.
 
 The output on the leader host (which should be `pg1` if we start Patroni on this host first) should be:
 
@@ -398,7 +415,7 @@ WARNING:  skipping special file "./.s.PGSQL.5432"
 If everything went ok, besides the output above, we can ask Patroni to get us a status like this:
 
 ```bash
-postgres@pg1:~/patroni-packages/bin$ ./patronictl -c ~/patroni-packages/patroni.yml list
+postgres@pg1:~$ ./patroni-packages/bin/patronictl -c ~/patroni-packages/patroni.yml list
 + Cluster: postgres (7509873657610391674) ---+----+-----------+
 | Member   | Host      | Role    | State     | TL | Lag in MB |
 +----------+-----------+---------+-----------+----+-----------+
@@ -414,7 +431,7 @@ And we can see what's happening on `etc` side as well by using the following com
 ```bash
 export ETCDCTL_API=2                              # Since `--enable-v2` and version 3.4 is used.
 /apps/etcd/etcdctl ls -r /Cluster/postgres        # To get the keys that Patroni uses.
-/apps/etcd/etcdctl watch -f -r /Cluster/postgres  # To watch how Patroni keys are updated over (in real) time.
+/apps/etcd/etcdctl watch -f -r /Cluster/postgres  # To watch how Patroni keys are updated over time.
 ```
 
 <br/>
