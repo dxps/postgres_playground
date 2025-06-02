@@ -253,8 +253,9 @@ TODO: A complete SysV init script would be [this one](https://github.com/patroni
 
 ## etcd Setup
 
-Start the etcd & HAProxy related container using the `./run_etcdhap.sh` script.
-Enter into the container using `./etcdhap.sh` script.
+Start the `pg4` container using the `./run_pg4.sh` script, and enter into it using `./pg4.sh` script.
+
+This container will run `etcd`, `haproxy` and `pgBackRest`.
 
 Download [etcd v3.4.32](https://github.com/etcd-io/etcd/releases/download/v3.4.32/etcd-v3.4.32-linux-amd64.tar.gz) and have it extracted into `/apps/etcd` directory:
 
@@ -426,7 +427,7 @@ postgres@pg1:~$ ./patroni-packages/bin/patronictl -c ~/patroni-packages/patroni.
 postgres@pg1:~/patroni-packages/bin$
 ```
 
-And we can see what's happening on `etc` side as well by using the following commands on `etcdhap` host:
+And we can see what's happening on `etc` side as well by using the following commands on `pg4` host:
 
 ```bash
 export ETCDCTL_API=2                              # Since `--enable-v2` and version 3.4 is used.
@@ -440,7 +441,7 @@ export ETCDCTL_API=2                              # Since `--enable-v2` and vers
 
 ## HAProxy Setup
 
-Still on `etcdhap` host, let's first install HAProxy using `apt update && apt install -y haproxy`.
+Still on `pg4` host, let's first install HAProxy using `apt update && apt install -y haproxy`.
 
 Put the following content in `/etc/haproxy/haproxy.cfg` file:
 
@@ -616,9 +617,9 @@ postgres@pg1:~$
 And, of course, by the `etcd`:
 
 ```bash
-root@etcdha:/# ETCDCTL_API=2 /apps/etcd/etcdctl get /Cluster/postgres/leader
+root@pg4:/# ETCDCTL_API=2 /apps/etcd/etcdctl get /Cluster/postgres/leader
 data-pg3
-root@etcdha:/#
+root@pg4:/#
 ```
 
 Reconnecting again to PostgreSQL through HAProxy, we land on `pg3` (which has the IP of `10.0.0.13`), since this is the new leader:
@@ -642,14 +643,17 @@ postgres=#
 
 Furthermore, we can also:
 
--   stop Patroni and PostgreSQL on the new leader - `pg3` in this case - by running `kill -TERM 16 17` and we'll see that Patroni will promote `pg2` to the leader.
--   connect again to PostgreSQL.
--   test the PostgreSQL replication by:
-    -   starting again at least one (or both) of the remaining host(s), `pg1` and `pg2`.
-    -   create a database while still being connected to `pg3`'s PostgreSQL instance and running `create database test1`.
-    -   connect directly to a PostgreSQL instance that is a replica\
+-   Stop Patroni and PostgreSQL on the new leader - `pg3` in this case - by running `kill -TERM 16 17` and we'll see that Patroni will promote `pg2` to the leader.
+-   Connect again to PostgreSQL.
+-   Test the PostgreSQL replication by:
+    -   Starting again at least one (or both) of the remaining host(s), `pg1` and `pg2`.
+    -   Creating a database while still being connected to `pg3`'s PostgreSQL instance\
+        and running `create database test1`.
+    -   Connect directly to a PostgreSQL instance that is a replica\
         for example, to `pg2` using `psql -h 10.0.0.12 -p 5000 -d postgres -U postgres`.
     -   and check that the database exists as well on it using `\l` on that `psql` session.
+-   Do a Patroni switchover\n
+    Example: `./patroni-packages/bin/patronictl -c ~/patroni-packages/patroni.yml switchover --candidate data-pg1`
 
 <br/>
 
@@ -657,38 +661,43 @@ Furthermore, we can also:
 
 ## pgBackRest Setup
 
+Let's continue on `pg4` host with the pgBackRest installation and configuration.
+
+To install it, let's first add the official PostgreSQL APT repository:
+
+```shell
+sudo apt install curl ca-certificates
+sudo install -d /usr/share/postgresql-common/pgdg
+sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+# Create the repository configuration file:
+. /etc/os-release
+sudo sh -c "echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
+# And update the package list.
+sudo apt update
+```
+
+and then install pgBackRest using `apt install pgbackrest`.
+
 ### Passwordless (SSH based) Authentication
 
-#### Generate SSH keys
+#### Generate SSH key pair and copy the public key to `pg4`
 
--   Enter into the container (using `./pg1.sh`, for example).
--   Switch to `postgres` user (using `su - postgres`).
--   Generate the keypair (using `ssh-keygen -t rsa`).
+-   Enter into each of the containers.\
+    (for example, using `./pg1.sh` to enter into `pg1` container)
+-   Switch to `postgres` user.\
+    (using `su - postgres`)
+-   Generate the keypair.\
+    (using `ssh-keygen -t rsa`)
+-   Copy the public key to `pg4`\
+    (using `ssh-copy-id pg4`)
 
-#### Copy the public keys to each others hosts
+Example:
 
-Copy the public key (from `~/.ssh/id_rsa.pub`) of `postgres` user from one host to the other\
-(into `~/.ssh/authorized_keys` file of `postgres` user on that host).\
-A shorter way is to use `ssh-copy-id` command (such as `ssh-copy-id pg2`)\
-which copies the public key of `postgres` user from `pg1` to `pg2`.
-
-<br/>
-
-### Init the secondary server
-
-On `pg2` host, do:
-
-1. Remove the existing data directory (`rm -rf /var/lib/postgresql/16/main/`)
-2. Run `pg_basebackup -h pg1 -w -U postgres -F plain -X stream -R -S dxps_slot -C -D /var/lib/postgresql/16/main/` to copy the data from `pg1` to `pg2`.\
-   where:
-    - `-S` specifies the slot name
-    - `-C` specifies to create the slot
-    - `-X` specifies the wall method (shortcut for `--wal-method`).
-        - Tells to include the required WAL files in the backtup.
-        - `stream` tells to stream WAL data while the backup is being taken.
-          It will open an second connection to the server.
-
-Additionally, test the replication (from `pg1` to `pg2`) by creating a database in `pg1` instance and verify that this gets also created in `pg2` instance.
+```shell
+postgres@pg1:~$ ssh-keygen -t rsa # Just hit enter for the other parameters.
+postgres@pg1:~$ ssh-copy-id pg4   # Copy the public key of `postgres` user to `pg4`.
+postgres@pg1:~$ ssh pg4 id        # Test the result (it shouldn't ask for a password).
+```
 
 <br/>
 
@@ -728,3 +737,7 @@ After starting up a fourth host (named `pgsp` in this case), prepare it to resto
 
 Run the restore (that is done using the repository host, that is `pgbr` host):\
 `pgbackrest --stanza=demo --log-level-console=detail restore`
+
+```
+
+```
