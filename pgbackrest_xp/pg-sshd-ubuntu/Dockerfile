@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV SSH_USERNAME="postgres"
 ENV SSHD_CONFIG_ADDITIONAL=""
 
-# Install OpenSSH server, clean up, create directories, set permissions, and configure SSH
 RUN apt-get update \
     && apt-get install -y iproute2 iputils-ping openssh-server postgresql-16 vim sudo telnet net-tools python3-pip python3-dev libpq-dev python3-venv \
     && apt-get clean \
@@ -14,10 +13,6 @@ RUN apt-get update \
     && mkdir -p /run/sshd \
     && chmod 755 /run/sshd \
     && if ! id -u "$SSH_USERNAME" > /dev/null 2>&1; then useradd -ms /bin/bash "$SSH_USERNAME"; fi \
-    && chown -R "$SSH_USERNAME":"$SSH_USERNAME" /home/"$SSH_USERNAME" \
-    && chmod 755 /home/"$SSH_USERNAME" \
-    && mkdir -p /home/"$SSH_USERNAME"/.ssh \
-    && chown "$SSH_USERNAME":"$SSH_USERNAME" /home/"$SSH_USERNAME"/.ssh \
     && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config \
     && echo "PermitRootLogin no" >> /etc/ssh/sshd_config
 

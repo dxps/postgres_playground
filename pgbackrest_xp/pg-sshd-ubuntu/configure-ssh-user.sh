@@ -5,6 +5,12 @@
 : ${SSH_PASSWORD:?"Error: SSH_PASSWORD environment variable is not set."}
 : ${SSHD_CONFIG_ADDITIONAL:=""}
 
+SSH_USERHOME=${SSH_USERHOME}
+if [ "$SSH_USERNAME" == "postgres" ]; then
+    echo "The username is 'postgres', thus its homedir is '/var/lib/postgresql'."
+    SSH_USERHOME=/var/lib/postgresql
+fi
+
 # Create the user with the provided username and set the password
 if id "$SSH_USERNAME" &>/dev/null; then
     echo "User $SSH_USERNAME already exists!"
@@ -16,11 +22,12 @@ fi
 
 # Set the authorized keys from the AUTHORIZED_KEYS environment variable (if provided)
 if [ -n "$AUTHORIZED_KEYS" ]; then
-    mkdir -p /home/$SSH_USERNAME/.ssh
-    echo "$AUTHORIZED_KEYS" > /home/$SSH_USERNAME/.ssh/authorized_keys
-    chown -R $SSH_USERNAME:$SSH_USERNAME /home/$SSH_USERNAME/.ssh
-    chmod 700 /home/$SSH_USERNAME/.ssh
-    chmod 600 /home/$SSH_USERNAME/.ssh/authorized_keys
+    mkdir -p ${SSH_USERHOME}/.ssh
+    echo "$AUTHORIZED_KEYS" > ${SSH_USERHOME}/.ssh/authorized_keys
+    echo "Initing .ssh ('${SSH_USERHOME}/.ssh') dir for user $SSH_USERNAME ..."
+    chown -R $SSH_USERNAME:$SSH_USERNAME ${SSH_USERHOME}/.ssh
+    chmod 700 ${SSH_USERHOME}/.ssh
+    chmod 600 ${SSH_USERHOME}/.ssh/authorized_keys
     echo "Authorized keys set for user $SSH_USERNAME"
     # Disable password authentication if authorized keys are provided
     sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
