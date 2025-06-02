@@ -17,23 +17,11 @@ First of all, build a local Docker image of `pg-sshd-ubuntu` that is included in
 This image is used by all the PostgreSQL related containers. Build the image as follows:
 
 ```shell
-cd pg-sshd-ubuntu/
-docker build -t pg-sshd-ubuntu:latest .
+cd docker_iamge
+./build_image.sh
 ```
 
 Start the three containers (named `pg1`, `pg2` and `pg3`) using their respective `./run_pgX.sh` scripts.
-
-Add `pg1.sh` like scripts that uses `docker exec -it {container-name} /bin/bash`.
-
-Enter to the containers using their respective `./pgX.sh` scripts to install some prerequisites:
-
-1. Add `postgres` user to sudoers (very handy sometimes).\
-   Example (from `pg1` host, as `root` user):
-    ```bash
-    root@pg1:/# grep sudo /etc/group
-    sudo:x:27:ubuntu,postgres
-    root@pg1:/#
-    ```
 
 <br/>
 

@@ -5,5 +5,5 @@ docker run -d              \
   -p 2223:22               \
   -e SSH_USERNAME=postgres \
   -e SSH_PASSWORD=pgpass   \
-  my-ubuntu-sshd:latest
+  pg-sshd-ubuntu:latest
 
