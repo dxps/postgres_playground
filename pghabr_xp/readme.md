@@ -33,17 +33,16 @@ This section presents the Patroni related setup.
 
 ### Patroni installation
 
-On all three `pgX` hosts, run the following commands:
+On `pg1`, `pg2` and `pg3` hosts, run the following commands as `postgres` user (`su - postgres` first):
 
 ```bash
-su - postgres
 echo 'export PATH=$PATH:/usr/lib/postgresql/16/bin' > .profile
 python3 -m venv patroni-packages
 source patroni-packages/bin/activate
 pip3 install --upgrade setuptools pip
 pip install psycopg[binary] patroni python-etcd
 cd patroni-packages
-mkdir data && chmod 700 data && cd data
+mkdir data && chmod 700 data
 ```
 
 In that `data` directory we'll put the Patroni configuration file named `patroni.yml`.\
@@ -88,6 +87,7 @@ bootstrap:
                 - createrole
                 - createdb
 postgresql:
+    cluster_name: cluster_1
     listen: 10.0.0.11:5432
     connect_address: 10.0.0.11:5432
     data_dir: /var/lib/postgresql/patroni-packages/data
@@ -145,6 +145,7 @@ bootstrap:
                 - createrole
                 - createdb
 postgresql:
+    cluster_name: cluster_1
     listen: 10.0.0.12:5432
     connect_address: 10.0.0.12:5432
     data_dir: /var/lib/postgresql/patroni-packages/data
@@ -202,6 +203,7 @@ bootstrap:
                 - createrole
                 - createdb
 postgresql:
+    cluster_name: cluster_1
     listen: 10.0.0.13:5432
     connect_address: 10.0.0.13:5432
     data_dir: /var/lib/postgresql/patroni-packages/data
@@ -237,13 +239,14 @@ case "$1" in
         exit 1
         ;;
 esac
+
 exit 0
 ```
 
 that means (as `postgres` user):
 
 -   creating the file using `sudo vi /etc/init.d/partroni`
--   and make it executable using `chmod +x /etc/init.d/patroni`.
+-   and make it executable using `sudo chmod +x /etc/init.d/patroni`.
 
 TODO: A complete SysV init script would be [this one](https://github.com/patroni/patroni/blob/master/extras/startup-scripts/patroni).
 
@@ -278,11 +281,15 @@ cd /apps/etcd
 
 ## Start the PostgreSQL HA cluster using Patroni
 
-With `etcd` up and running, start Patroni on all three `pgX` hosts using the `sudo /etc/init.d/patroni start`.
+With `etcd` up and running, start Patroni on all three `pg1-3` hosts:
+
+```shell
+sudo /etc/init.d/patroni start
+```
 
 The output on the leader host (which should be `pg1` if we start Patroni on this host first) should be:
 
-```
+```shell
 root@pg1:/etc/init.d# ./patroni start
 2025-05-29 14:25:17,437 INFO: No PostgreSQL configuration items changed, nothing to reload.
 2025-05-29 14:25:17,442 INFO: Lock owner: None; I am data-pg1
@@ -336,7 +343,7 @@ Success. You can now start the database server using:
 
 On `pg2` host, the output would be like this:
 
-```
+```shell
 postgres@pg2:~$ sudo /etc/init.d/patroni start
 2025-05-29 14:27:54,540 INFO: No PostgreSQL configuration items changed, nothing to reload.
 2025-05-29 14:27:54,543 INFO: Lock owner: data-pg1; I am data-pg2
@@ -372,7 +379,7 @@ WARNING:  skipping special file "./.s.PGSQL.5432"
 
 On `pg3` host, the output would be like this:
 
-```
+```shell
 postgres@pg3:~$ sudo /etc/init.d/patroni start
 [sudo] password for postgres:
 2025-05-29 14:29:15,357 INFO: No PostgreSQL configuration items changed, nothing to reload.
@@ -415,21 +422,21 @@ WARNING:  skipping special file "./.s.PGSQL.5432"
 
 If everything went ok, besides the output above, we can ask Patroni to get us a status like this:
 
-```bash
+```shell
 postgres@pg1:~$ ./patroni-packages/bin/patronictl -c ~/patroni-packages/patroni.yml list
 + Cluster: postgres (7509873657610391674) ---+----+-----------+
-| Member   | Host      | Role    | State     | TL | Lag in MB |
-+----------+-----------+---------+-----------+----+-----------+
-| data-pg1 | 10.0.0.11 | Leader  | running   |  1 |           |
-| data-pg2 | 10.0.0.12 | Replica | streaming |  1 |         0 |
-| data-pg3 | 10.0.0.13 | Replica | streaming |  1 |         0 |
-+----------+-----------+---------+-----------+----+-----------+
+| Member | Host      | Role    | State     | TL | Lag in MB |
++--------+-----------+---------+-----------+----+-----------+
+| pg1    | 10.0.0.11 | Leader  | running   |  1 |           |
+| pg2    | 10.0.0.12 | Replica | streaming |  1 |         0 |
+| pg3    | 10.0.0.13 | Replica | streaming |  1 |         0 |
++--------+-----------+---------+-----------+----+-----------+
 postgres@pg1:~/patroni-packages/bin$
 ```
 
 And we can see what's happening on `etc` side as well by using the following commands on `pg4` host:
 
-```bash
+```shell
 export ETCDCTL_API=2                              # Since `--enable-v2` and version 3.4 is used.
 /apps/etcd/etcdctl ls -r /Cluster/postgres        # To get the keys that Patroni uses.
 /apps/etcd/etcdctl watch -f -r /Cluster/postgres  # To watch how Patroni keys are updated over time.
@@ -661,42 +668,23 @@ Furthermore, we can also:
 
 ## pgBackRest Setup
 
-Let's continue on `pg4` host with the pgBackRest installation and configuration.
-
-To install it, let's first add the official PostgreSQL APT repository:
-
-```shell
-sudo apt install curl ca-certificates
-sudo install -d /usr/share/postgresql-common/pgdg
-sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-# Create the repository configuration file:
-. /etc/os-release
-sudo sh -c "echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
-# And update the package list.
-sudo apt update
-```
-
-and then install pgBackRest using `apt install pgbackrest`.
+Let's configure pgBackRest on `pg1-3` hosts.
 
 ### Passwordless (SSH based) Authentication
 
-#### Generate SSH key pair and copy the public key to `pg4`
+Let's generate SSH key pair and copy the public key to `pg4`:
 
--   Enter into each of the containers.\
-    (for example, using `./pg1.sh` to enter into `pg1` container)
--   Switch to `postgres` user.\
-    (using `su - postgres`)
--   Generate the keypair.\
-    (using `ssh-keygen -t rsa`)
--   Copy the public key to `pg4`\
-    (using `ssh-copy-id pg4`)
+-   Enter into each of the (`pg1` `pg2` and `pg3`) containers.
+-   Switch to `postgres` user.
+-   Generate the keypair using `ssh-keygen -t rsa`.
+-   Copy the public key to `pg4` using `ssh-copy-id pg4`.
 
 Example:
 
 ```shell
 postgres@pg1:~$ ssh-keygen -t rsa # Just hit enter for the other parameters.
 postgres@pg1:~$ ssh-copy-id pg4   # Copy the public key of `postgres` user to `pg4`.
-postgres@pg1:~$ ssh pg4 id        # Test the result (it shouldn't ask for a password).
+postgres@pg1:~$ ssh pg4 id        # Test the result: it shouldn't ask for a password.
 ```
 
 <br/>
@@ -710,34 +698,40 @@ Check the backup status with `pgbackrest info` on any of the three hosts.
 
 <br/>
 
-### Restore the backup on a spare host
+### Configuration
 
-After starting up a fourth host (named `pgsp` in this case), prepare it to restore by:
+For each `pg1` to `pg3` host, let's overwrite `/etc/pgbackrest.conf` file with this content:
 
-1. Generating (using `ssh-keygen`) and copying its public key to `pgbr` using `ssh-copy-id pgbr`.
-2. Populate its `/etc/pgbackrest.conf` file with:
+```ini
+[global]
+repo1-host=pg4
+repo1-host-user=postgres
+repo1-path=/var/lib/pgbackrest
+repo1-retention-full=2
+process-max=4
+compress-type=zstd
+log-level-console=info
 
-    ```ini
-    [global]
-    repo1-host=pgbr
-    repo1-host-user=postgres
-    repo1-path=/var/lib/pgbackrest
-    repo1-retention-full=2
-    log-level-console=detail
-    log-level-file=debug
-    compress-level=6
-    delta=y
-    backup-standby=y
-    start-fast=y
-
-    [demo]
-    pg1-user=postgres
-    pg1-path=/var/lib/postgresql/16/main
-    ```
-
-Run the restore (that is done using the repository host, that is `pgbr` host):\
-`pgbackrest --stanza=demo --log-level-console=detail restore`
-
+[cluster_1]
+pg1-path=/var/lib/postgresql/data
 ```
 
+And now, we'll have to update Patroni's configuration (aka `patroni.yml`) with the following items, as children of `bootstrap.dcs.postgresql.parameters`:
+
+```yml
+bootstrap.dcs.postgresql.parameters: # Included just for clarity.
+    wal_level: replica
+    hot_standby: 'on'
+    wal_keep_segments: 8
+    max_wal_senders: 5
+    max_replication_slots: 10
+    wal_log_hints: 'on'
+    logging_collector: 'on'
+    archive_mode: 'on'
+    archive_command: 'pgbackrest --stanza=cluster_1 archive-push %p'
 ```
+
+Next:
+
+1. Create the Patroni's stanza using `pgbackrest --stanza=cluster_1 stanza-create --pg1-socket-path=/var/lib/postgresql/data`
+2. Reload Patroni's configuration using `./patroni-packages/bin/patronictl reload`
