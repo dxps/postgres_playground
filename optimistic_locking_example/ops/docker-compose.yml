@@ -1,0 +1,10 @@
+services:
+    postgres:
+        image: postgres:17
+        container_name: optimistic_locking_example
+        environment:
+            POSTGRES_USER: optimistic_locking
+            POSTGRES_PASSWORD: optimistic_locking
+            POSTGRES_DB: optimistic_locking
+        ports:
+            - '5457:5432'
