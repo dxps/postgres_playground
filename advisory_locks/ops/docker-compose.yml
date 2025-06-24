@@ -1,0 +1,10 @@
+services:
+    postgres:
+        image: postgres:17
+        container_name: pgtest
+        environment:
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+            POSTGRES_DB: test
+        ports:
+            - '5458:5432'
